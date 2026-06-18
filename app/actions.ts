@@ -1,3 +1,5 @@
+'use server';
+
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 
@@ -9,7 +11,6 @@ function parseNumber(value: FormDataEntryValue | null): number {
 }
 
 export async function addLancamento(formData: FormData) {
-  'use server';
   const valor = parseNumber(formData.get('valor'));
   const descricao = String(formData.get('descricao') || '').trim();
   const data = new Date(String(formData.get('data') || new Date().toISOString()));
@@ -61,7 +62,6 @@ export async function addLancamento(formData: FormData) {
 }
 
 export async function createDebt(formData: FormData) {
-  'use server';
   const nome = String(formData.get('nome') || '').trim();
   const valorParcela = parseNumber(formData.get('valorParcela'));
   const saldoDevedor = parseNumber(formData.get('saldoDevedor'));
@@ -80,7 +80,6 @@ export async function createDebt(formData: FormData) {
 }
 
 export async function toggleDebtStatus(formData: FormData) {
-  'use server';
   const id = String(formData.get('id') || '');
   if (!id) return;
   await prisma.divida.update({ where: { id }, data: { ativa: false } });
@@ -89,7 +88,6 @@ export async function toggleDebtStatus(formData: FormData) {
 }
 
 export async function updateBucketPercentages(formData: FormData) {
-  'use server';
   const entries = Array.from(formData.entries()).filter(([key]) => key.startsWith('bucket_'));
   const updates = entries.map(([key, value]) => ({
     id: key.replace('bucket_', ''),
@@ -108,7 +106,6 @@ export async function updateBucketPercentages(formData: FormData) {
 }
 
 export async function addCardConfig(formData: FormData) {
-  'use server';
   const nome = String(formData.get('nome') || '').trim();
   if (!nome) return;
   await prisma.configuracaoCartao.create({ data: { nome, ativo: true } });
@@ -116,7 +113,6 @@ export async function addCardConfig(formData: FormData) {
 }
 
 export async function toggleCardActive(formData: FormData) {
-  'use server';
   const id = String(formData.get('id') || '');
   const ativo = String(formData.get('ativo') || 'true') === 'true';
   if (!id) return;
@@ -125,7 +121,6 @@ export async function toggleCardActive(formData: FormData) {
 }
 
 export async function addCategorizacaoRule(formData: FormData) {
-  'use server';
   const palavraChave = String(formData.get('palavraChave') || '').trim();
   const categoria = String(formData.get('categoria') || '').trim();
   if (!palavraChave || !categoria) return;
