@@ -1,5 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import AppNav from '@/components/AppNav';
+import QuickAddButton from '@/components/QuickAddButton';
 
 export const metadata: Metadata = {
   title: 'Flux - Controle Financeiro',
@@ -11,7 +13,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR">
       <body>
         <div className="min-h-screen bg-slate-50 text-slate-900">
-          <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+          <div className="mx-auto max-w-6xl px-4 py-6">
+            <AppNav />
+            <main>{children}</main>
+            <QuickAddButton />
+          </div>
         </div>
       </body>
     </html>
