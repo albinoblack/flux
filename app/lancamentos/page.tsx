@@ -10,7 +10,7 @@ export default async function LancamentosPage({ searchParams }: Props) {
   const currentMonth = await getCurrentMonth();
   const ano = searchParams?.ano ? Number(searchParams.ano) : currentMonth?.ano;
   const mes = searchParams?.mes ? Number(searchParams.mes) : currentMonth?.mes;
-  let lancamentos = [];
+  let lancamentos: any[] = [];
   let totals = { totalMonth: 0, totalToday: 0, totalWeek: 0 };
 
   if (ano && mes) {
