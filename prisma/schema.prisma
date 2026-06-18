@@ -1,0 +1,100 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model MesFinanceiro {
+  id           String   @id @default(cuid())
+  ano          Int
+  mes          Int
+  rendaLiquida Float
+  observacoes  String?
+  criadoEm     DateTime @default(now())
+
+  buckets     Bucket[]
+  cartoes     LancamentoCartao[]
+  lancamentos LancamentoDiario[]
+
+  @@unique([ano, mes])
+}
+
+model Bucket {
+  id         String        @id @default(cuid())
+  mesId      String
+  mes        MesFinanceiro @relation(fields: [mesId], references: [id], onDelete: Cascade)
+  nome       String
+  percentual Float
+  meta       Float
+  gasto      Float         @default(0)
+}
+
+model LancamentoCartao {
+  id        String        @id @default(cuid())
+  mesId     String
+  mes       MesFinanceiro @relation(fields: [mesId], references: [id], onDelete: Cascade)
+  cartao    String
+  valor     Float
+  data      DateTime?
+  descricao String?
+  origem    String        @default("manual")
+}
+
+model LancamentoDiario {
+  id            String        @id @default(cuid())
+  mesId         String
+  mes           MesFinanceiro @relation(fields: [mesId], references: [id], onDelete: Cascade)
+  data          DateTime
+  valor         Float
+  descricao     String
+  categoria     String?
+  meioPagamento String
+  cartao        String?
+  origem        String        @default("manual")
+  criadoEm      DateTime      @default(now())
+}
+
+model Divida {
+  id           String   @id @default(cuid())
+  nome         String
+  valorParcela Float
+  saldoDevedor Float
+  tipoPessoa   String
+  ativa        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model ConfiguracaoBucket {
+  id         String @id @default(cuid())
+  nome       String @unique
+  percentual Float
+  ordem      Int
+}
+
+model ConfiguracaoCartao {
+  id    String  @id @default(cuid())
+  nome  String  @unique
+  ativo Boolean @default(true)
+}
+
+model RegraCategorizacao {
+  id           String @id @default(cuid())
+  palavraChave String
+  categoria    String
+  criadoEm     DateTime @default(now())
+}
+
+model ImportLog {
+  id               String   @id @default(cuid())
+  tipo             String
+  nomeArquivo      String
+  linhasLidas      Int
+  linhasImportadas Int
+  linhasComErro    Int
+  detalhesErro     Json?
+  criadoEm         DateTime @default(now())
+}
