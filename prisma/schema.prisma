@@ -64,7 +64,7 @@ model LancamentoDiario {
 
 model Divida {
   id           String   @id @default(cuid())
-  nome         String
+  nome         String   @unique
   valorParcela Float
   saldoDevedor Float
   tipoPessoa   String
