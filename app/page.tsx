@@ -1,168 +1,247 @@
 import Link from 'next/link';
 import { getActiveDebtTotals, getCurrentMonth, getLastMonths, getTodayTransactions } from '@/lib/queries';
-import { bucketProgressColor, clampPercent, formatCurrency, formatMonthLabel } from '@/lib/finance';
+import { formatCurrency, formatMonthLabel } from '@/lib/finance';
+
+const BUCKET_STYLE: Record<string, { bar: string; text: string; ring: string }> = {
+  'Essencial':   { bar: 'bg-sky-500',     text: 'text-sky-400',     ring: 'ring-sky-500/20' },
+  'Streaming':   { bar: 'bg-violet-500',  text: 'text-violet-400',  ring: 'ring-violet-500/20' },
+  'Objetivos':   { bar: 'bg-emerald-500', text: 'text-emerald-400', ring: 'ring-emerald-500/20' },
+  'Reserva':     { bar: 'bg-amber-500',   text: 'text-amber-400',   ring: 'ring-amber-500/20' },
+  'Pé na Jaca':  { bar: 'bg-rose-500',    text: 'text-rose-400',    ring: 'ring-rose-500/20' },
+};
 
 export default async function DashboardPage() {
   const month = await getCurrentMonth();
-  const lastMonths = await getLastMonths(12);
-  const todayTransactions = await getTodayTransactions(5);
+  const lastMonths = await getLastMonths(6);
+  const todayTransactions = await getTodayTransactions(8);
   const debtTotals = await getActiveDebtTotals();
 
-  if (!month) {
-    return (
-      <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="mt-2 text-slate-600">
-          Nenhum mês cadastrado ainda. Comece importando sua planilha na página de importação.
-        </p>
-        <Link href="/importar/planilha" className="inline-flex rounded-2xl bg-brand-600 px-5 py-3 text-white transition hover:bg-slate-800">
-          Importar planilha
-        </Link>
-      </div>
-    );
-  }
-
-  const totalCard = month.cartoes.reduce((sum, item) => sum + item.valor, 0);
-  const totalLancamentos = month.lancamentos.reduce((sum, item) => sum + item.valor, 0);
+  const totalCard = month?.cartoes.reduce((s, c) => s + c.valor, 0) ?? 0;
+  const totalLancamentos = month?.lancamentos.reduce((s, l) => s + l.valor, 0) ?? 0;
   const totalGasto = totalCard + totalLancamentos;
-  const saldoDisponivel = month.rendaLiquida - totalGasto;
-  const metaBuckets = month.buckets.map((bucket) => ({
-    nome: bucket.nome,
-    meta: bucket.meta,
-    gasto: bucket.gasto,
-    ratio: bucket.meta > 0 ? bucket.gasto / bucket.meta : 0,
-  }));
+  const saldoDisponivel = (month?.rendaLiquida ?? 0) - totalGasto;
 
-  const maxIncome = lastMonths.length > 0 ? Math.max(...lastMonths.map((item) => Math.abs(item.rendaLiquida || 0))) : 1;
+  const kpis = [
+    {
+      label: 'Renda líquida',
+      value: month?.rendaLiquida ?? 0,
+      border: 'border-t-violet-500',
+      text: 'text-violet-400',
+      shadow: 'shadow-violet-500/10',
+    },
+    {
+      label: 'Saldo disponível',
+      value: saldoDisponivel,
+      border: saldoDisponivel >= 0 ? 'border-t-emerald-500' : 'border-t-rose-500',
+      text: saldoDisponivel >= 0 ? 'text-emerald-400' : 'text-rose-400',
+      shadow: saldoDisponivel >= 0 ? 'shadow-emerald-500/10' : 'shadow-rose-500/10',
+    },
+    {
+      label: 'Total gasto',
+      value: Math.abs(totalGasto),
+      border: 'border-t-rose-500',
+      text: 'text-rose-400',
+      shadow: 'shadow-rose-500/10',
+    },
+    {
+      label: 'Parcelas de dívida',
+      value: debtTotals.totalParcelas,
+      border: 'border-t-amber-500',
+      text: 'text-amber-400',
+      shadow: 'shadow-amber-500/10',
+    },
+  ];
+
+  const maxSpend = lastMonths.length > 0
+    ? Math.max(1, ...lastMonths.map(m =>
+        Math.abs(
+          m.cartoes.reduce((s, c) => s + c.valor, 0) +
+          m.lancamentos.reduce((s, l) => s + l.valor, 0)
+        )
+      ))
+    : 1;
 
   return (
-    <div className="space-y-8">
-      <header className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Dashboard</p>
-            <h1 className="text-3xl font-bold text-slate-900">Resumo do mês atual</h1>
-            <p className="mt-2 text-slate-600">Dados consolidados do mês, gasto de hoje e comportamento por bucket.</p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl bg-brand-600 px-5 py-4 text-white shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-brand-200">Renda líquida</p>
-              <p className="mt-3 text-2xl font-semibold">{formatCurrency(month.rendaLiquida)}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Total gasto</p>
-              <p className="mt-3 text-2xl font-semibold text-slate-900">{formatCurrency(totalGasto)}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Saldo disponível</p>
-              <p className="mt-3 text-2xl font-semibold text-slate-900">{formatCurrency(saldoDisponivel)}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Parcelas de dívida</p>
-              <p className="mt-3 text-2xl font-semibold text-slate-900">{formatCurrency(debtTotals.totalParcelas)}</p>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+            {month ? formatMonthLabel(month.ano, month.mes) : 'Sem dados'}
+          </p>
+          <h1 className="mt-1 text-2xl font-bold text-zinc-100">Dashboard</h1>
         </div>
-      </header>
+        <Link
+          href="/importar/extrato"
+          className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:bg-violet-500"
+        >
+          + Importar extrato
+        </Link>
+      </div>
 
-      <section className="grid gap-6 xl:grid-cols-[1.8fr_1fr]">
-        <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Gasto de hoje</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-900">{formatCurrency(todayTransactions.reduce((sum, item) => sum + item.valor, 0))}</p>
-            </div>
-            <Link href="/lancamentos" className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-              Ver lançamentos
-            </Link>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {kpis.map((kpi) => (
+          <div
+            key={kpi.label}
+            className={`rounded-2xl border border-zinc-800 border-t-2 ${kpi.border} bg-zinc-900 p-5 shadow-lg ${kpi.shadow}`}
+          >
+            <p className="text-xs uppercase tracking-wide text-zinc-500">{kpi.label}</p>
+            <p className={`mt-3 text-xl font-bold lg:text-2xl ${kpi.text}`}>
+              {formatCurrency(kpi.value)}
+            </p>
           </div>
-          <div className="space-y-4">
-            {todayTransactions.length > 0 ? (
-              todayTransactions.map((item) => (
-                <div key={item.id} className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-900">{item.descricao || 'Sem descrição'}</p>
-                      <p className="text-sm text-slate-500">{item.meioPagamento} · {item.categoria || 'Sem categoria'}</p>
-                    </div>
-                    <p className="font-semibold text-slate-900">{formatCurrency(item.valor)}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-slate-600">Nenhum gasto registrado hoje.</p>
-            )}
-          </div>
-        </div>
+        ))}
+      </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Cartões do mês</h2>
-          <div className="mt-4 space-y-3">
-            {month.cartoes.length > 0 ? (
-              month.cartoes.map((cartao) => {
-                const percent = totalCard > 0 ? (cartao.valor / totalCard) * 100 : 0;
+      <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+        {/* Buckets */}
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+            Buckets — meta vs. realizado
+          </h2>
+          <div className="mt-5 space-y-5">
+            {month?.buckets.length ? (
+              month.buckets.map((bucket) => {
+                const style = BUCKET_STYLE[bucket.nome] ?? { bar: 'bg-zinc-500', text: 'text-zinc-400', ring: '' };
+                const ratio = bucket.meta > 0 ? bucket.gasto / bucket.meta : 0;
+                const pct = Math.min(100, ratio * 100);
+                const over = ratio > 1;
                 return (
-                  <div key={cartao.id} className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <p className="font-medium text-slate-900">{cartao.cartao}</p>
-                      <p className="text-sm text-slate-600">{formatCurrency(cartao.valor)}</p>
+                  <div key={bucket.id}>
+                    <div className="mb-2 flex items-center justify-between text-sm">
+                      <span className={`font-semibold ${style.text}`}>{bucket.nome}</span>
+                      <span className="text-zinc-400">
+                        {formatCurrency(bucket.gasto)}
+                        <span className="text-zinc-700"> / {formatCurrency(bucket.meta)}</span>
+                      </span>
                     </div>
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-                      <div className="h-full rounded-full bg-brand-500" style={{ width: `${percent}%` }} />
+                    <div className="h-2.5 overflow-hidden rounded-full bg-zinc-800">
+                      <div
+                        className={`h-full rounded-full transition-all ${over ? 'bg-rose-500' : style.bar}`}
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
+                    <p className="mt-1 text-right text-[11px] text-zinc-600">
+                      {Math.round(pct)}%{over && ' — acima do limite'}
+                    </p>
                   </div>
                 );
               })
             ) : (
-              <p className="text-slate-600">Nenhum cartão cadastrado neste mês.</p>
+              <p className="text-sm text-zinc-600">
+                Nenhum bucket configurado.{' '}
+                <Link href="/importar/planilha" className="text-violet-400 hover:text-violet-300 underline">
+                  Importe sua planilha
+                </Link>{' '}
+                para começar.
+              </p>
             )}
           </div>
         </div>
-      </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Meta vs. realizado por bucket</h2>
-          <div className="mt-6 space-y-4">
-            {metaBuckets.map((bucket) => {
+        {/* Lançamentos de hoje */}
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Hoje</h2>
+            <Link href="/lancamentos" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
+              Ver todos →
+            </Link>
+          </div>
+
+          {todayTransactions.length > 0 ? (
+            <>
+              <p className="mt-3 text-2xl font-bold text-zinc-100">
+                {formatCurrency(Math.abs(todayTransactions.filter(t => t.valor < 0).reduce((s, t) => s + t.valor, 0)))}
+                <span className="ml-2 text-sm font-normal text-zinc-500">em saídas</span>
+              </p>
+              <div className="mt-4 space-y-2">
+                {todayTransactions.map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between rounded-xl bg-zinc-800/50 px-3 py-2.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-zinc-200">{t.descricao || 'Sem descrição'}</p>
+                      <p className="text-[11px] text-zinc-500">{t.categoria || t.meioPagamento}</p>
+                    </div>
+                    <span
+                      className={`ml-3 shrink-0 text-sm font-bold ${
+                        t.valor >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                      }`}
+                    >
+                      {t.valor >= 0 ? '+' : ''}{formatCurrency(t.valor)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="mt-4 text-sm text-zinc-600">Nenhum lançamento hoje.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Tendência mensal — bar chart CSS */}
+      {lastMonths.length > 0 && (
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+            Gasto mensal — últimos {lastMonths.length} meses
+          </h2>
+          <div className="mt-6 flex items-end gap-2 lg:gap-4">
+            {[...lastMonths].reverse().map((m) => {
+              const spent = Math.abs(
+                m.cartoes.reduce((s, c) => s + c.valor, 0) +
+                m.lancamentos.reduce((s, l) => s + l.valor, 0)
+              );
+              const heightPct = (spent / maxSpend) * 100;
+              const isCurrent = month?.ano === m.ano && month?.mes === m.mes;
               return (
-                <div key={bucket.nome} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm text-slate-600">
-                    <span>{bucket.nome}</span>
-                    <span>{formatCurrency(bucket.gasto)} / {formatCurrency(bucket.meta)}</span>
+                <div key={`${m.ano}-${m.mes}`} className="flex flex-1 flex-col items-center gap-2">
+                  <span className="text-[10px] font-medium text-zinc-500">
+                    {formatCurrency(spent).replace('R$ ', 'R$ ')}
+                  </span>
+                  <div className="relative w-full rounded-t-lg overflow-hidden bg-zinc-800" style={{ height: '80px' }}>
+                    <div
+                      className={`absolute bottom-0 left-0 right-0 rounded-t-lg transition-all ${
+                        isCurrent ? 'bg-violet-500 shadow-lg shadow-violet-500/30' : 'bg-violet-500/30'
+                      }`}
+                      style={{ height: `${Math.max(4, heightPct)}%` }}
+                    />
                   </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-slate-200">
-                    <div className={`${bucketProgressColor(bucket.ratio)} h-full`} style={{ width: `${Math.min(100, bucket.ratio * 100)}%` }} />
-                  </div>
+                  <span className={`text-[10px] font-medium ${isCurrent ? 'text-violet-400' : 'text-zinc-500'}`}>
+                    {formatMonthLabel(m.ano, m.mes)}
+                  </span>
                 </div>
               );
             })}
           </div>
         </div>
+      )}
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Saldo disponível</h2>
-          <div className="mt-6 space-y-4">
-            {lastMonths.map((item) => {
-              const monthlySpent = item.cartoes.reduce((sum, card) => sum + card.valor, 0) + item.lancamentos.reduce((sum, lanc) => sum + lanc.valor, 0);
-              const available = item.rendaLiquida - monthlySpent;
-              const width = maxIncome > 0 ? (available / maxIncome) * 100 : 0;
+      {/* Cartões */}
+      {!!month?.cartoes.length && (
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Cartões do mês</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {month.cartoes.map((c) => {
+              const pct = totalCard > 0 ? (c.valor / totalCard) * 100 : 0;
               return (
-                <div key={`${item.ano}-${item.mes}`} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm text-slate-600">
-                    <span>{formatMonthLabel(item.ano, item.mes)}</span>
-                    <span>{formatCurrency(available)}</span>
+                <div key={c.id} className="rounded-xl bg-zinc-800/60 p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-zinc-300">{c.cartao}</span>
+                    <span className="text-sm font-bold text-rose-400">{formatCurrency(c.valor)}</span>
                   </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-                    <div className="h-full rounded-full bg-brand-500" style={{ width: `${Math.max(10, Math.min(100, width))}%` }} />
+                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-zinc-700">
+                    <div className="h-full rounded-full bg-rose-500" style={{ width: `${pct}%` }} />
                   </div>
+                  <p className="mt-1 text-right text-[11px] text-zinc-600">{Math.round(pct)}% do total</p>
                 </div>
               );
             })}
           </div>
         </div>
-      </section>
-
+      )}
     </div>
   );
 }
