@@ -15,7 +15,7 @@ export default async function DashboardPage() {
         <p className="mt-2 text-slate-600">
           Nenhum mês cadastrado ainda. Comece importando sua planilha na página de importação.
         </p>
-        <Link href="/importar/planilha" className="inline-flex rounded-2xl bg-slate-950 px-5 py-3 text-white transition hover:bg-slate-800">
+        <Link href="/importar/planilha" className="inline-flex rounded-2xl bg-brand-600 px-5 py-3 text-white transition hover:bg-slate-800">
           Importar planilha
         </Link>
       </div>
@@ -45,20 +45,20 @@ export default async function DashboardPage() {
             <p className="mt-2 text-slate-600">Dados consolidados do mês, gasto de hoje e comportamento por bucket.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-3xl bg-slate-950 px-5 py-4 text-white shadow-sm">
-              <p className="text-sm uppercase text-slate-300">Renda líquida</p>
+            <div className="rounded-2xl bg-brand-600 px-5 py-4 text-white shadow-sm">
+              <p className="text-xs uppercase tracking-wide text-brand-200">Renda líquida</p>
               <p className="mt-3 text-2xl font-semibold">{formatCurrency(month.rendaLiquida)}</p>
             </div>
-            <div className="rounded-3xl bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm uppercase text-slate-500">Total gasto</p>
+            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Total gasto</p>
               <p className="mt-3 text-2xl font-semibold text-slate-900">{formatCurrency(totalGasto)}</p>
             </div>
-            <div className="rounded-3xl bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm uppercase text-slate-500">Saldo disponível</p>
+            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Saldo disponível</p>
               <p className="mt-3 text-2xl font-semibold text-slate-900">{formatCurrency(saldoDisponivel)}</p>
             </div>
-            <div className="rounded-3xl bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm uppercase text-slate-500">Parcelas de dívida</p>
+            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Parcelas de dívida</p>
               <p className="mt-3 text-2xl font-semibold text-slate-900">{formatCurrency(debtTotals.totalParcelas)}</p>
             </div>
           </div>
@@ -107,8 +107,8 @@ export default async function DashboardPage() {
                       <p className="font-medium text-slate-900">{cartao.cartao}</p>
                       <p className="text-sm text-slate-600">{formatCurrency(cartao.valor)}</p>
                     </div>
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
-                      <div className="h-full rounded-full bg-slate-950" style={{ width: `${percent}%` }} />
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-full rounded-full bg-brand-500" style={{ width: `${percent}%` }} />
                     </div>
                   </div>
                 );
@@ -153,8 +153,8 @@ export default async function DashboardPage() {
                     <span>{formatMonthLabel(item.ano, item.mes)}</span>
                     <span>{formatCurrency(available)}</span>
                   </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-slate-200">
-                    <div className="h-full rounded-full bg-slate-950" style={{ width: `${Math.max(10, Math.min(100, width))}%` }} />
+                  <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-full rounded-full bg-brand-500" style={{ width: `${Math.max(10, Math.min(100, width))}%` }} />
                   </div>
                 </div>
               );
@@ -163,24 +163,6 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-slate-900">Barras de progresso por bucket</h2>
-        <div className="mt-6 space-y-4">
-          {metaBuckets.map((bucket) => {
-            return (
-              <div key={bucket.nome} className="space-y-2">
-                <div className="flex items-center justify-between text-sm text-slate-600">
-                  <span>{bucket.nome}</span>
-                  <span>{Math.round(bucket.ratio * 100)}%</span>
-                </div>
-                <div className="h-3 overflow-hidden rounded-full bg-slate-200">
-                  <div className={`${bucketProgressColor(bucket.ratio)} h-full`} style={{ width: `${Math.min(100, bucket.ratio * 100)}%` }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
     </div>
   );
 }
