@@ -35,8 +35,9 @@ export async function POST(request: Request) {
         const text = await file.text();
         transacoesRaw = parseNubankCsv(text);
       } else {
-        // PDF: extrai texto usando pdf-parse
-        const pdfParse = (await import('pdf-parse')).default;
+        // PDF: extrai texto usando pdf-parse (CJS — require evita erro de tipos no build)
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const pdfParse = require('pdf-parse');
         const buffer = Buffer.from(await file.arrayBuffer());
         const pdfData = await pdfParse(buffer);
         transacoesRaw = parseNubankPdfText(pdfData.text);
