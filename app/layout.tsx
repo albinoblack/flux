@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import AppNav from '@/components/AppNav';
 import QuickAddButton from '@/components/QuickAddButton';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -13,15 +14,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={inter.variable}>
+    <html lang="pt-BR" className={inter.variable} suppressHydrationWarning>
       <body>
-        <div className="min-h-screen bg-zinc-950 font-sans text-zinc-100">
-          <div className="mx-auto max-w-6xl px-4 py-6">
-            <AppNav />
-            <main>{children}</main>
-            <QuickAddButton />
+        <ThemeProvider>
+          <div className="min-h-screen bg-slate-50 font-sans text-slate-900 dark:bg-zinc-950 dark:text-zinc-100">
+            <div className="mx-auto max-w-6xl px-4 py-6">
+              <AppNav />
+              <main>{children}</main>
+              <QuickAddButton />
+            </div>
           </div>
-        </div>
+        </ThemeProvider>
       </body>
     </html>
   );
