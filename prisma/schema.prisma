@@ -44,17 +44,22 @@ model LancamentoCartao {
 }
 
 model LancamentoDiario {
-  id            String        @id @default(cuid())
+  id            String         @id @default(cuid())
   mesId         String
-  mes           MesFinanceiro @relation(fields: [mesId], references: [id], onDelete: Cascade)
+  mes           MesFinanceiro  @relation(fields: [mesId], references: [id], onDelete: Cascade)
   data          DateTime
   valor         Float
   descricao     String
   categoria     String?
+  bucket        String?        // Essencial | Streaming | Objetivos | Reserva | Pé na Jaca
+  isFixed       Boolean        @default(false)
   meioPagamento String
   cartao        String?
-  origem        String        @default("manual")
-  criadoEm      DateTime      @default(now())
+  origem        String         @default("manual")
+  source        String?        // nubank | mercado_pago | bb
+  importBatchId String?
+  importBatch   ExtratoImport? @relation(fields: [importBatchId], references: [id])
+  criadoEm      DateTime       @default(now())
 }
 
 model Divida {
@@ -97,4 +102,14 @@ model ImportLog {
   linhasComErro    Int
   detalhesErro     Json?
   criadoEm         DateTime @default(now())
+}
+
+model ExtratoImport {
+  id           String             @id @default(cuid())
+  source       String
+  fileType     String
+  fileName     String
+  rowCount     Int
+  importadoEm  DateTime           @default(now())
+  lancamentos  LancamentoDiario[]
 }

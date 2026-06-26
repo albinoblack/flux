@@ -7,6 +7,7 @@ export default function AppNav() {
     { href: '/mes/2026/7', label: 'Mês' },
     { href: '/dividas', label: 'Dívidas' },
     { href: '/analise', label: 'Análise' },
+    { href: '/importar/extrato', label: 'Importar Extrato' },
     { href: '/config', label: 'Config' },
   ];
 
